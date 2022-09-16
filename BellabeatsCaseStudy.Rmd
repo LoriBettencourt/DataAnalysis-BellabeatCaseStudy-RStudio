@@ -1,0 +1,373 @@
+---
+title: "BellabeatCaseStudy"
+author: "Lori Bettencourt"
+date: "2022-09-15"
+output:
+  html_document: default
+  pdf_document: default
+urlcolor: blue 
+---
+
+```{r setup, include=FALSE}
+ knitr::opts_chunk$set(echo = TRUE)
+```
+
+################## 
+
+# **The Ask**
+
+################## 
+
+From [Coursera's](https://www.coursera.org/) [Google Data Analytics](https://www.coursera.org/professional-certificates/google-data-analytics?utm_source=gg&utm_medium=sem&utm_campaign=15-GoogleDataAnalytics-US&utm_content=B2C&campaignid=12504215975&adgroupid=122709142687&device=c&keyword=coursera%20data%20analytics%20course&matchtype=b&network=g&devicemodel=&adpostion=&creativeid=504570191916&hide_mobile_promo&gclid=Cj0KCQjw94WZBhDtARIsAKxWG--aGc_mpu7WTeU8sHtAVT4D9k79qOSJOCdgcl3hVUqPH2zR1B2j8acaAovsEALw_wcB) Case Study Assignment: You are a junior data analyst working on the marketing analyst team at [Bellabeat](https://bellabeat.com/), a high-tech manufacturer of health-focused products for women. Urška Sršen believes that analyzing smart device fitness data could help unlock new growth opportunities for the company. You have been asked to focus on one of Bellabeat's products and analyze smart device data to gain insight into how consumers are using their smart devices. Collecting data on activity, sleep, stress, and reproductive health has allowed Bellabeat to empower women with knowledge about their own health and habits. Analyze smart device usage data in order to gain insight into how consumers use non-Bellabeat smart devices. She then wants you to select one Bellabeat product to apply these insights to in your presentation.
+
+################## 
+
+## Business Task
+
+################## 
+
+How can fitness smart device trends help influence Bellabeat's marketing strategy for their customers?\
+**Stakeholders to consider:** Urška Sršen, a Co-founder and Chief Creative Officer. Should keep Sando Mur, a Co-founder, Mathematician, and Executive in mind as well.
+
+################## 
+
+## Include necessary packages
+
+################## 
+
+Check for and load required packages - installing first, if necessary.
+
+```{r Packages to include, echo=FALSE}
+packages <- c("tidyverse", "lubridate", "ggplot2", "ggpubr", "janitor")
+for (p in packages) {
+  print(paste("Load package:", p))
+}
+```
+
+```{r Package install and load, include=FALSE}
+for (p in packages) {
+  if (!require(p, character.only = TRUE))
+    install.packages(p)
+  library(p, character.only = TRUE)
+}
+```
+
+################## 
+
+# **Prepare**
+
+################## 
+
+It was recommended that [FitBit Fitness Tracker Data](https://www.kaggle.com/datasets/arashnic/fitbit) be retrieved from [Mobius](https://www.kaggle.com/arashnic) to be analyzed. This [Kaggle](https://www.kaggle.com/) data set contains personal fitness tracker information from 33 FitBit users and is stored in long format. There are some limitations to the data in that the collection is third-party data; it is for less than of month of activity from 2016, which is quite outdated; and it is far from comprehensive with a limited user base of 33 individuals. Its reliability is therefore, questionable. Even though [Mobius](https://www.kaggle.com/arashnic) cites the origin of the data, this does not do much to improve its credibility. Still, I will use it as instructed to gather insights in a quest to address the business task.
+
+################## 
+
+## Data preparation discoveries
+
+################## 
+
+-   Column names in each data frame were examined to see which data are available for analysis and if there are common key fields in each file. The Id and date are common in all tables and are used for joining.
+-   33 unique Ids were found in all of the daily files, with the sleepDay_merged.csv file being the exception having 24.
+-   The weightLogInfo_merged.csv file contained information for only 8 Ids. This file was, therefore, dropped from the study as no significant finding are expected to be found from such a limited sample.
+-   We will exclude the files dailyCalories_merged.csv and dailyIntensities_merged.csv because the information in those files is already contained in dailyActivity_merged.csv.
+
+**Read csv data into data frames**
+
+```{r Load csv files}
+daily_act_df <- read.csv("/cloud/project/Datasets/dailyActivity_merged.csv")
+daily_cal_df <- read.csv("/cloud/project/Datasets/dailyCalories_merged.csv")
+daily_int_df <- read.csv("/cloud/project/Datasets/dailyIntensities_merged.csv")
+sleep_day_df <- read.csv("/cloud/project/Datasets/sleepDay_merged.csv", 
+                         stringsAsFactors = FALSE)
+weight_df <- read.csv("/cloud/project/Datasets/weightLogInfo_merged.csv")
+```
+
+**Compare column names**
+
+```{r Compare columns}
+colnames(daily_act_df)
+colnames(daily_cal_df)
+colnames(daily_int_df)
+colnames(sleep_day_df)
+colnames(weight_df)
+```
+
+**Determine unique Id count in each data frame**
+
+```{r Determine unique Id count in each data frame, echo=FALSE}
+print(paste("Unique Ids in daily_act_df:", n_distinct(daily_act_df$Id)))
+print(paste("Unique Ids in daily_cal_df:", n_distinct(daily_cal_df$Id)))
+print(paste("Unique Ids in daily_int_df:", n_distinct(daily_int_df$Id)))
+print(paste("Unique Ids in sleep_day_df:", n_distinct(sleep_day_df$Id)))
+print(paste("Unique Ids in weight_df:", n_distinct(weight_df$Id)))
+```
+
+################## 
+
+# **Clean (process) the data**
+
+################## 
+
+-   Column names are cleaned so that they are unique and consistent in each data frame and so these names only include characters, numbers, and underscores. This also casts them to lower-case, as is standard for variable naming conventions.
+-   Row data and data types for each data frame were inspected using the str function.
+-   Each data frame was examined to compare its number of observations before and after removing duplicates. This comparison was made to check if a significant amount of observations were dropped, which would compromise its integrity.
+-   The sleep_day_df had three duplicate rows, which were removed. No other data frames had duplicate observations.
+-   Leading and trailing white space was removed from character data types.
+-   Date columns in each data frame were renamed to 'date' and cast as a date type rather than chr.
+-   Dropped null values from sedentary_minutes, lightly_active_minutes, fairly_active_minutes, very_active_minutes, total_steps fields of daily_act_df data frame and confirmed the row count was not impacted.
+-   Dropped null values from id, date, total_minutes_asleep, total_time_in_bed fields of sleep_day_df data frame and confirmed the row count was not impacted.
+
+**Clean column names**
+
+```{r Clean column names}
+daily_act_df <- clean_names(daily_act_df)
+sleep_day_df <- clean_names(sleep_day_df)
+```
+
+**Inspect row data and data types**
+
+```{r Inspect row data and data types, echo=FALSE}
+print("daily_act_df")
+str(daily_act_df)
+print("sleep_day_df")
+str(sleep_day_df)
+```
+
+**Determine number of observations in each data frame after removing duplicates**
+
+```{r Removed duplicate observations in each data frame, echo=FALSE}
+daily_act_df <- daily_act_df[!duplicated(daily_act_df), ]
+print(paste("Row count daily_act_df after removing existing duplicates:", nrow(daily_act_df)))
+
+sleep_day_df <- sleep_day_df[!duplicated(sleep_day_df), ]
+print(paste("Row count sleep_day_df after removing existing duplicates:", nrow(sleep_day_df)))
+```
+
+**Remove leading and trailing white space(s) from strings**
+
+```{r Remove leading and trailing white space(s) from strings}
+daily_act_df <- daily_act_df %>%
+  mutate_if(is.character, str_trim)
+sleep_day_df <- sleep_day_df %>%
+  mutate_if(is.character, str_trim)
+```
+
+**Rename date columns and change data type to date**
+
+```{r Rename dates and change data type to date, echo=FALSE}
+daily_act_df <- daily_act_df %>%
+  rename(date = activity_date) %>%
+  mutate(date=mdy(date))
+paste("The data type of the daily_act_df 'date' column is now ", class(daily_act_df$date), ".", sep = "")
+
+sleep_day_df <- sleep_day_df %>%
+  rename(date = sleep_day) %>%
+  mutate(date = as_date(date, format ="%m/%d/%Y %I:%M:%S %p"))
+paste("The data type of the sleep_day_df 'date' column is now ",class(sleep_day_df$date), ".", sep = "")
+```
+
+**Confirm there are no null values in the fields we use for joining and graphing.**
+
+```{r Drop nulls in fields of daily_act_df that will be used for graphing, echo=FALSE}
+paste("daily_act_df row count before dropping rows with null(s):", nrow(daily_act_df))
+daily_act_df <- daily_act_df %>%
+  drop_na(id, date, calories, sedentary_minutes, lightly_active_minutes, fairly_active_minutes, very_active_minutes, total_steps, total_distance)
+paste("daily_act_df row count after dropping rows with null(s):", nrow(daily_act_df))
+
+paste("sleep_day_df row count before dropping rows with null(s):", nrow(sleep_day_df))
+sleep_day_df <- sleep_day_df %>%
+  drop_na(id, date, total_minutes_asleep, total_time_in_bed)
+paste("sleep_day_df row count after dropping rows with null(s):", nrow(sleep_day_df))
+```
+
+################## 
+
+# **Analyze the data with the use of visualizations**
+
+################## 
+
+Examining summary statistics for key values in the daily_act_df, we get a sense of the range of data as well as some measures of central tendency and quartile data. We created a column in this data frame to store the sum of all active minutes called total_active_minutes.
+
+Visualizations were created to examine the relationship between calories burned each day and sedentary_minutes, lightly_active_minutes, fairly_active_minutes, very_active_minutes, and total_active minutes for that day. We can see from each scatter plot that as the intensity and duration of activity both increase, the higher the correlation between the activity intensity and the number of calories burned, and the greater the slope of the regression line. The calories burned with increased sedentary time shows a negative correlation and negative slope. The last visualization mapping calories burned against total activity minutes shows a steady increase overall. The data show a positive correlation between calories burned and activity time.
+
+Looking more specifically at calories burned against steps on a given day, we also see a positive correlation and the slope of our regression line is also positive for our scatter plot. When we break down step count into categories using quartile ranges, we can see that each quartile has a higher minimum, q1, median, q3, and maximum calorie burn than the previous quartile with fewer steps that day.
+
+We also examined summary statistics in the sleep_day_df before taking a look at sleep data. We checked to see if either total_active_minutes or total_steps has a relationship with total_minutes_asleep and it is negligible. We also inspected total_minutes_asleep against total_time_in_bed, as instructed. As we would expect, the data are nearly perfectly linear and have a 0.93 correlation with a regression line slope of 0.87.
+
+################## 
+
+## A look at activity
+
+################## 
+
+**Summary stats for fields in daily_act_df data frame**
+
+```{r Summary stats for fields in daily_act data frame, echo=FALSE}
+daily_act_df %>%  
+  select(total_steps,
+         total_distance,
+         calories) %>%
+  summary()
+```
+
+**Create a new field in the daily_act_df to total all active minutes for each observation**
+
+```{r Add total_active_minutes field as a sum of activity}
+daily_act_df$total_active_minutes <- daily_act_df$lightly_active_minutes +
+  daily_act_df$fairly_active_minutes + daily_act_df$very_active_minutes
+```
+
+```{r Daily Calories Burned Against Increading Categorical Minutes, echo=FALSE}
+point_format <- geom_point(color = "#4773aa")
+line_format <- geom_smooth(method = lm, formula = y ~ x, se = FALSE, color = "black")
+
+ggplot(data = daily_act_df, aes(x = sedentary_minutes, y = calories)) +  
+  point_format + 
+  line_format +
+  stat_regline_equation(label.x = 10, label.y = 4750) +
+  stat_cor(method = "pearson", label.x = 10, label.y = 4250) +
+  labs(title="Daily Calories Burned Against Number of Sedentary Minutes", 
+       x="Sedentary Minutes", y="Daily Calories Burned")
+
+ggplot(data = daily_act_df, aes(x = lightly_active_minutes, y = calories)) +
+  point_format + 
+  line_format +
+  stat_regline_equation(label.x = 5, label.y = 4750) +
+  stat_cor(method = "pearson", label.x = 5, label.y = 4250) +
+  labs(title="Daily Calories Burned Against Number of Lightly Active Minutes", 
+       x="Lightly Active Minutes", y="Daily Calories Burned")
+
+ggplot(data = daily_act_df, aes(x = fairly_active_minutes, y = calories)) +  
+  point_format + 
+  line_format +
+  stat_regline_equation(label.x = 102, label.y = 4750) +
+  stat_cor(method = "pearson", label.x = 102, label.y = 4250) +
+  labs(title="Daily Calories Burned Against Number of Fairly Active Minutes", 
+       x="Fairly Active Minutes", y="Daily Calories Burned")
+
+ggplot(data = daily_act_df, aes(x = very_active_minutes, y = calories)) +  
+  point_format + 
+  line_format +
+  stat_regline_equation(label.x = 27, label.y = 4750) +
+  stat_cor(method = "pearson", label.x = 27, label.y = 4250) +
+  labs(title="Daily Calories Burned Against Number of Very Active Minutes", 
+       x="Very Active Minutes", y="Daily Calories Burned")
+
+ggplot(data = daily_act_df, aes(x = total_active_minutes, y = calories)) +  
+  point_format + 
+  line_format +
+  stat_regline_equation(label.x = 10, label.y = 4750) +
+  stat_cor(method = "pearson", label.x = 10, label.y = 4250) +
+  labs(title="Daily Calories Burned Against Number of Total Active Minutes", 
+       x="Total Active Minutes", y="Daily Calories Burned")
+```
+
+################## 
+
+## More specifically: A look at step activity
+
+################## 
+
+```{r Daily Calories Burned Against Total Number of Steps, echo=FALSE}
+ggplot(data = daily_act_df, aes(x = total_steps, y = calories)) +
+  geom_smooth(method=lm, formula = y ~ x, se = FALSE) + 
+  geom_point(color="#2e8540") +
+  stat_regline_equation(label.x = 25, label.y = 4750) +
+  stat_cor(method = "pearson", label.x = 25, label.y = 4250) +
+  labs(title="Daily Calories Burned Against Total Number of Steps", 
+       x="Step Count", y="Daily Calories Burned")
+```
+
+**Create quartile categories based on number of daily steps**
+
+```{r Create quartile categories based on number of daily steps and order the level ascending}
+daily_act_df <- daily_act_df %>% 
+  mutate(
+    step_act = case_when(
+      total_steps <= 3790  ~ "q1_steps",
+      total_steps > 3790 & total_steps <= 7406 ~ "q2_steps",
+      total_steps > 7406 & total_steps <= 10727 ~ "q3_steps",
+      total_steps > 10727  ~ "q4_steps"
+  ))
+
+daily_act_df$step_act <- factor(daily_act_df$step_act,
+                                levels = c("q1_steps","q2_steps", "q3_steps", "q4_steps"))
+```
+
+```{r Quartile Summaries of Calories Burned to Step Count, echo=FALSE}
+p <- ggplot(data = daily_act_df, aes(x = total_steps, y = calories)) +
+  geom_boxplot(aes(color=step_act)) +
+  labs(title="Quartile Summaries of Calories Burned to Step Count", 
+       x="Daily Step Count", y="Daily Calories Burned")
+p <- p + scale_color_discrete(name="Step Count Categories", labels = c("Minimal: < 3791", "Fair: 3791 - 7406", "Moderate: 7407 - 10727", "High: > 10727"))
+p
+```
+
+################## 
+
+## A look at sleep
+
+################## 
+
+**Summary stats for fields in sleep_day_df data frame**
+
+```{r Summary stats for fields in sleep_day_df data frame, echo=FALSE}
+sleep_day_df %>%  
+  select(total_minutes_asleep,
+         total_time_in_bed) %>%
+  summary()
+```
+
+**Merge daily_act_df and sleep_day_df**
+
+```{r Merge daily_act_df and sleep_day_df}
+comb_daily_act_sleep_df <- merge(daily_act_df, sleep_day_df, 
+                                 by.x=c("id", "date"), by.y=c("id", "date"))
+```
+
+```{r Minutes Asleep Against Daily Active Minutes, echo=FALSE}
+ggplot(data = comb_daily_act_sleep_df, aes(x=total_active_minutes, y=total_minutes_asleep)) +  
+  geom_smooth(method=lm, formula = y ~ x, se=FALSE) + 
+  geom_point(color="#981b1e") +
+  stat_regline_equation(label.x = 403, label.y = 750) +
+  stat_cor(method = "pearson", label.x = 403, label.y = 650) +
+  labs(title="Minutes Asleep Against Daily Active Minutes", 
+       x="Active Minutes", y="Minutes Asleep")
+```
+
+```{r Minutes Asleep Against Total Steps, echo=FALSE}
+ggplot(data = comb_daily_act_sleep_df, aes(x=total_steps, y=total_minutes_asleep)) +  
+  geom_smooth(method=lm, formula = y ~ x, se=FALSE) + 
+  geom_point(color="#981b1e") +
+  stat_regline_equation(label.x = 15020, label.y = 750) +
+  stat_cor(method = "pearson", label.x = 15020, label.y = 650) +
+  labs(title="Minutes Asleep Against Total Steps", 
+       x="Total Steps", y="Minutes Asleep")
+```
+
+```{r Daily Time Asleep Against Time in Bed, echo=FALSE}
+ggplot(data = sleep_day_df, aes(x=total_time_in_bed, y=total_minutes_asleep)) +  
+  geom_smooth(method=lm, formula = y ~ x, se=FALSE) + 
+  geom_point(color="#981b1e") +
+  stat_regline_equation(label.x = 5, label.y = 750) +
+  stat_cor(method = "pearson", label.x = 5, label.y = 650) +
+  labs(title="Daily Time Asleep Against Time in Bed", 
+       x="Minutes In Bed", y="Minutes Asleep")
+```
+
+# **Share and Act**
+
+Reminder: The business task was to determine how fitness smart device trends can help influence Bellabeat's marketing strategy for their customers. This task was to be performed with stakeholders Urška Sršen and Sando Mur in mind, who are both co-founders an executives at Bellabeat.
+
+## Marketing Strategy Recommendations
+
+**Bellabeat Leaf - You won't leave home without it.**
+
+1.  Results speak! Staying active during the day, including a high step count, increases calorie burn. The longer an individual is sedentary, the lower their calorie burn. The more active they are, the higher their calorie burn. Busy women need a fitness tracker that is out of mind, but getting the job done. Bellabeat Leaf is one less thing to think about and your tracking information is always there when you need it. As the day goes on, find out if you have met your goals or if this is a night to go to the gym or take a trip to the park. And you are not reliant on your phone to be with you and/or charged for Leaf to track!\
+2.  Fitness meets fashion. Bellabeat Leaf will keep track of all of your activity, including step count, so you can stay on track and motivated to reach your goals. Tracking leads to action and it is happening every moment without you having to think about it. The Bellabeat Leaf is fashionable, hypo-allergenic, waterproof, and has a battery that will last 6 months! You will never have to leave it behind because you literally wear it 24 hours a day and it can be worn on a necklace, bracelet, or can be clipped to your clothing.
+
+## Suggestions
+
+1.  Revisit with more recent data of more users over a longer time period, preferably first party data from Bellabeat users.
+2.  If not already implemented, be sure the Bellabeat Leaf app allows users to set goals and that the app sends alerts about progress towards completing them.
+3.  If not already implemented, be sure the Bellabeat Leaf app alerts users when their sleep time is less than optimal, if their sleep is interrupted often during the night, or if there sleep quality if otherwise poor. Women want to feel energized when they wake up, so that they can meet their fitness and health goals.
