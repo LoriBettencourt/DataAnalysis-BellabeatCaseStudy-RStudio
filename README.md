@@ -12,7 +12,7 @@ Determine how fitness smart device trends can help influence Bellabeat's marketi
 
 ## Data
 
-Data was retrieved from [FitBit Fitness Tracker Data](https://www.kaggle.com/datasets/arashnic/fitbit) posted by [Mobius](https://www.kaggle.com/arashnic) on [Kaggle.com](https://www.kaggle.com/). This data set contains personal fitness tracker information from 33 FitBit users and is stored in long format. There are some limitations to the data in that the collection is third-party data; it is for less than of month of activity from 2016, which is quite outdated; and it is far from comprehensive with a limited user base of 33 individuals. Its reliability is therefore, questionable. Even though [Mobius](https://www.kaggle.com/arashnic) cites the origin of the data, this does not do much to improve its credibility. Still, I used it as instructed to gather insights in a quest to address the business task.
+Data was retrieved from [FitBit Fitness Tracker Data](https://www.kaggle.com/datasets/arashnic/fitbit) posted by [Mobius](https://www.kaggle.com/arashnic) on [Kaggle.com](https://www.kaggle.com/). This data set contains personal fitness tracker information from 33 FitBit users and is stored in long format. There are some limitations to the data in that the collection is third-party data; it is for less than one month of activity from 2016, which is quite outdated; and it is far from comprehensive with a limited user base of 33 individuals. Its reliability is therefore, questionable. Even though [Mobius](https://www.kaggle.com/arashnic) cites the origin of the data, this does not do much to improve its credibility. Still, I used it as instructed to gather insights in a quest to address the business task.
 
 ## Summary
 
