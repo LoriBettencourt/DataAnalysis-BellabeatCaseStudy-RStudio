@@ -44,7 +44,7 @@ When we break down step count into categories using quartile ranges, we can see 
 
 1.  Revisit with more recent data of more users over a longer time period, preferably first party data from Bellabeat users.
 2.  If not already implemented, be sure the Bellabeat Leaf app allows users to set goals and that the app sends alerts about progress towards completing them.
-3.  If not already implemented, be sure the Bellabeat Leaf app alerts users when their sleep time is less than optimal, if their sleep is interrupted often during the night, or if there sleep quality if otherwise poor. Women want to feel energized when they wake up, so that they can meet their fitness and health goals.
+3.  If not already implemented, be sure the Bellabeat Leaf app alerts users when their sleep time is less than optimal, if their sleep is interrupted often during the night, or if there sleep quality is otherwise poor. Women want to feel energized when they wake up, so that they can meet their fitness and health goals.
 
 ## Resources
 
